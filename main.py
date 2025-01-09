@@ -5,12 +5,27 @@ from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
                           ContextTypes, ConversationHandler, MessageHandler, filters)
 
 from interfaces.drvExcel import updateExcel
+import os
+from dotenv import load_dotenv
+
+# Load the .env file
+load_dotenv()
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
 logger = logging.getLogger(__name__)
+
+
+### read config File
+try:
+    BOT_TOKEN = os.environ['BOT_TOKEN']
+    destinatary=os.environ['BOT_DESTINATARY']
+    CSV_PATH=os.environ['EXCEL_PATH']
+    logger.info("Main.py - environment variables loaded")
+except:
+    logger.error("Main.py - Error while loading init variables from .env")
 
 ## my global var
 data_entered=[]
@@ -70,7 +85,7 @@ async def cost_extra_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     data_entered=context.user_data
 
-    updateExcel(description=data_entered['cost_description'],cuantity=data_entered['total_cost'],extra=data_entered['cost_extra_desc'])
+    updateExcel(path=CSV_PATH,description=data_entered['cost_description'],cuantity=data_entered['total_cost'],extra=data_entered['cost_extra_desc'])
 
     return ConversationHandler.END
 
@@ -81,7 +96,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 def main() -> None:
     """Run the bot."""
-    application = Application.builder().token("5212795032:AAH32kz9IJlgoXZZFOZcQz6RfshGiWXxb_w").build()
+    application = Application.builder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],

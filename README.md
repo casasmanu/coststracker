@@ -14,3 +14,8 @@ main idea:
 - use docker to deploy everything and have the code organized, so if i migrate the app from rpi will continue working
 
 ....
+
+initial config variables:
+- CSV PATH - excel should be in certain path, if not the code should create it.
+- bot token
+- 
