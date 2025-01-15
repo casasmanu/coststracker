@@ -33,7 +33,10 @@ data_entered=[]
 # Define states
 TOTAL_COST, COST_DESCRIPTION, COST_EXTRA_DESC = range(3)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+## other posible commands
+# retrieve month expenses, add , modify notes.
+
+async def cost_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     #starts the conversation 
 
     await update.message.reply_text(
@@ -99,7 +102,7 @@ def main() -> None:
     application = Application.builder().token(BOT_TOKEN).build()
 
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
+        entry_points=[CommandHandler('cost', cost_start)],
         states={
             TOTAL_COST: [MessageHandler(filters.TEXT & ~filters.COMMAND, total_cost)],
             COST_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, cost_description)],
@@ -111,7 +114,7 @@ def main() -> None:
     application.add_handler(conv_handler)
 
     # Handle the case when a user sends /start but they're not in a conversation
-    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('cost', cost_start))
 
     application.run_polling()
 
