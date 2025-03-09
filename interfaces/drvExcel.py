@@ -27,7 +27,7 @@ def openExcelFIle(path,sheetName):
     
     return mainDataFrame
 
-def updateExcel(path="C:\DEV\coststracker\GastosMensuales2022.xlsx", sheetName= "GastosVarios",sheet_columns=["Description","Cuantity","Extra"],sheet_data=["TestExpense",99,""]):
+def updateExcel(path="C:\DEV\coststracker\GastosMensuales2022.xlsx", sheetName="GastosVarios",sheet_columns=["Description","Cuantity","Extra"],sheet_data=["TestExpense",99,""]):
     #receives info, set timestamp, and return dataframe
     x = datetime.datetime.now()
     tmpData={}

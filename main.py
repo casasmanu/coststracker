@@ -89,7 +89,21 @@ async def cost_extra_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     description = context.user_data['cost_description'] 
     extra = context.user_data['cost_extra_desc'] 
     
-    updateExcel(path=CSV_PATH,sheet_columns=["Description","Cuantity","Extra"],sheet_data=[product,description,extra])
+    try:
+        updateExcel(path=CSV_PATH,sheet_columns=["Description","Cuantity","Extra"],sheet_data=[product,description,extra])
+        await update.message.reply_text(
+        f'<b>Data entered correctly\n ',
+        parse_mode='HTML',
+        reply_markup=ReplyKeyboardRemove(),
+        )
+    
+    except Exception as e:
+        await update.message.reply_text(
+        f'<b>ERROR WHILE ENTERING DATA TO CSV\n ' + e ,
+        parse_mode='HTML',
+        reply_markup=ReplyKeyboardRemove(),
+        )
+
     return ConversationHandler.END
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

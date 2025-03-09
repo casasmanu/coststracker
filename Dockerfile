@@ -1,5 +1,6 @@
 FROM python
 ENV TZ="Europe/Berlin"
+RUN mkdir -p /PermanentFiles
 WORKDIR /app
 COPY . /app/
 RUN apt-get update && apt-get install -y python3 && apt-get install -y python3-pip
