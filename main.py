@@ -50,7 +50,6 @@ async def cost_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     return TOTAL_COST
 
-
 async def total_cost(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the user entered cost."""
     user = update.message.from_user
@@ -62,7 +61,6 @@ async def total_cost(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         parse_mode='HTML',
         reply_markup=ReplyKeyboardRemove(),
     )
-
     return COST_DESCRIPTION
 
 
@@ -148,7 +146,7 @@ async def supermarkt_action(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if desired_action == 'Read List':
         ##Retrieve prizes for the desired supermarkt --> context.user_data['supermarket']
         selected_supermarkt=context.user_data['supermarket']
-        supermarkt_data=readData(sheetName=selected_supermarkt)
+        supermarkt_data=readData(path=CSV_PATH,sheetName=selected_supermarkt)
         await update.message.reply_text(supermarkt_data, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
