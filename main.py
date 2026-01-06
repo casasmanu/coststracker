@@ -42,8 +42,8 @@ async def cost_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text(
         '<b>ingresa la plata que gastaste en el siguiente orden:\n'
-        'Costo - Descripcion - Info Extra\n'
-        'para cancelar ingresa \\cancel</b>',
+        'Precio - Nombre - Info Extra\n'
+        'para cancelar ingresa \\cancel </b>',
         parse_mode='HTML',
         #reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True),
     )
@@ -90,14 +90,14 @@ async def cost_extra_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     try:
         updateExcel(path=CSV_PATH,sheet_columns=["Description","Cuantity","Extra"],sheet_data=[product,description,extra])
         await update.message.reply_text(
-        f'<b>Data entered correctly\n ',
+        f'<b>Data entered correctly\n </b>',
         parse_mode='HTML',
         reply_markup=ReplyKeyboardRemove(),
         )
     
     except Exception as e:
         await update.message.reply_text(
-        f'<b>ERROR WHILE ENTERING DATA TO CSV\n ' + e ,
+        f'<b>ERROR WHILE ENTERING DATA TO CSV\n ' + e +' </b>',
         parse_mode='HTML',
         reply_markup=ReplyKeyboardRemove(),
         )
