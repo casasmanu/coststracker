@@ -1,80 +1,105 @@
-import pandas as pd
-from openpyxl import load_workbook
-import datetime
+import os
 import logging
-
-## desired actions:
-## open csv and create data frame
-## add a value to a created data frame
-## update existing excel
-## close
-
-## Constant Variables
-csvPath="C:\DEV\coststracker\GastosMensuales2022.xlsx"
-sheetName= "GastosVarios"
-
-#Global Variables
+import datetime
+from openpyxl import Workbook, load_workbook
 
 logger = logging.getLogger(__name__)
 
-#load excel file to the global variable
-def openExcelFIle(path,sheetName):
+
+def _ensure_excel(path: str):
+    """Create Excel file if it does not exist"""
+    if not os.path.exists(path):
+        wb = Workbook()
+        wb.save(path)
+        wb.close()
+        logger.info(f"Excel file created at {path}")
+
+
+def _ensure_sheet(path: str, sheet_name: str, columns: list):
+    """Create sheet with headers if it does not exist"""
+    wb = load_workbook(path)
+
+    if sheet_name not in wb.sheetnames:
+        ws = wb.create_sheet(sheet_name)
+        ws.append(columns)
+        wb.save(path)
+        logger.info(f"Sheet '{sheet_name}' created")
+
+    wb.close()
+
+
+def updateExcel(path, sheetName, sheet_columns, sheet_data):
+    """
+    Append a row to a sheet.
+    Automatically creates file and sheet if needed.
+    """
+
     try:
-        mainDataFrame = pd.read_excel(path, sheetName)
-    except:
-        logger.error("Error while trying to read the sheet "+sheetName)
-        mainDataFrame=0
-    
-    return mainDataFrame
 
-def updateExcel(path="C:\DEV\coststracker\GastosMensuales2022.xlsx", sheetName= "GastosVarios",sheet_columns=["Description","Cuantity","Extra"],sheet_data=["TestExpense",99,""]):
-    #receives info, set timestamp, and return dataframe
-    x = datetime.datetime.now()
-    tmpData={}
-    i=0
+        _ensure_excel(path)
 
-    if sheetName=="GastosVarios":
-        tmpData.update({"Date":[x]})
+        columns = sheet_columns.copy()
 
-    for column in sheet_columns:
-        tmpData.update({column:[sheet_data[i]]})
-        i+=1
+        if sheetName == "GastosVarios":
+            columns = ["Date"] + columns
 
-    data=pd.DataFrame.from_dict(tmpData)
+        _ensure_sheet(path, sheetName, columns)
 
-    mainDataFrame=openExcelFIle(path,sheetName)
+        wb = load_workbook(path)
+        ws = wb[sheetName]
 
-    # CONCAT TWO DATAFRAMES
-    mainDataFrame=pd.concat([mainDataFrame,data],ignore_index=True)
-    ## APPEND CSV
-    writer = pd.ExcelWriter(path,engine="openpyxl", mode='a',if_sheet_exists="replace")
-    mainDataFrame.to_excel(writer, sheet_name=sheetName,index=False)
+        row = sheet_data.copy()
 
-    writer.close()
-    
-    return True
+        if sheetName == "GastosVarios":
+            row = [datetime.datetime.now()] + row
 
-def readData(path="C:\DEV\coststracker\GastosMensuales2022.xlsx", sheetName= "EDEKA"):
-    # read desired excel file data
-    mainDataFrame=openExcelFIle(path,sheetName)
-    output=mainDataFrame.__str__()
-    return output
+        ws.append(row)
+
+        wb.save(path)
+        wb.close()
+
+        logger.info(f"Added row to {sheetName}: {row}")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Error updating Excel: {e}")
+        return False
 
 
-#print(readData())
+def readData(path, sheetName):
+    """Return sheet data formatted for Telegram"""
 
-#updateExcel(sheetName="EDEKA",sheet_columns=["Producto","Precio","Calidad"],sheet_data=["pera",4.5,"Safa"])
-#updateExcel()
-# def infoToDataFrame(description="TestExpense",cuantity=99,extra=""):
-#     #receives info, set timestamp, and return dataframe
-#     x = datetime.datetime.now()
-#     output=pd.DataFrame({"Date":[x],"Description":description,"Cuantity":cuantity,"Extra":extra})
-#     return output
+    try:
 
-# ------------------------------ sequence needed to use this module ------------------------------- #
-## load main data frame
-#mainDataFrame=openExcelFIle(csvPath)
-## create de data Frame and update main file
-#inputFrame=infoToDataFrame(Description="Kebab",Cuantity=10,Extra="")
-#updateExcel(csvPath,inputFrame,sheetName)
+        if not os.path.exists(path):
+            return "No Excel file found."
 
+        wb = load_workbook(path)
+
+        if sheetName not in wb.sheetnames:
+            return f"No data for {sheetName}"
+
+        ws = wb[sheetName]
+
+        rows = list(ws.values)
+
+        wb.close()
+
+        if len(rows) <= 1:
+            return "No data yet."
+
+        header = rows[0]
+        data_rows = rows[1:]
+
+        output = f"📊 {sheetName} prices\n\n"
+
+        for row in data_rows:
+            row_text = " | ".join(str(x) for x in row)
+            output += row_text + "\n"
+
+        return output
+
+    except Exception as e:
+        logger.error(f"Error reading Excel: {e}")
+        return "Error reading Excel."

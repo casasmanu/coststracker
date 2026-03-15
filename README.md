@@ -19,3 +19,25 @@ initial config variables:
 - CSV PATH - excel should be in certain path, if not the code should create it.
 - bot token
 - 
+
+HOW TO Setup
+in order to set up the environment, run the next commands:
+- python -m venv .venv
+- source ./.venv/bin/activate
+- pip install -r ./requierements.txt
+
+
+HOW TO DOCKER
+buildear la imagen con el nombre coststracker-bot
+docker build -t coststracker-bot .
+
+luego agregar la imagen al docker compose
+version: "3.9"
+services:
+  bot:
+    image: coststracker-bot
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    restart: unless-stopped
