@@ -37,7 +37,8 @@ services:
   bot:
     image: coststracker-bot
     volumes:
-      - .:/app
+      - /home/manu/Workspace/coststracker:/app
+      - /mnt:/mnt/
     env_file:
       - .env
     restart: unless-stopped
