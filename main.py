@@ -4,8 +4,11 @@ from dotenv import load_dotenv
 
 from telegram.ext import Application
 
-from handlers.add_cost import cost_handler
-from handlers.supermarkt_handler import supermarkt_handler
+from telegram.ext import CommandHandler
+
+from handlers.add_cost import cost_handler, show_last_expenses
+from handlers.supermarket_handler import supermarket_handler
+from handlers.start_handler import start_handler
 
 load_dotenv()
 
@@ -21,12 +24,13 @@ def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
     application.bot_data["CSV_PATH"] = CSV_PATH
-
     application.add_handler(cost_handler)
-    application.add_handler(supermarkt_handler)
-
+    application.add_handler(CommandHandler("latest", show_last_expenses))
+    application.add_handler(supermarket_handler)
+    application.add_handler(start_handler)
     application.run_polling()
 
 
 if __name__ == "__main__":
     main()
+    
