@@ -178,3 +178,89 @@ def get_last_expenses(path: str, sheet_name: str = "VariableExpenses", n: int = 
     except Exception as e:
         logger.error(f"Error reading last expenses: {e}")
         return []
+
+
+def get_monthly_total(path: str, month: int, sheet_name: str = "VariableExpenses") -> float:
+    """Return total expenses for a given month number."""
+    try:
+        if not os.path.exists(path):
+            return 0.0
+
+        wb = load_workbook(path)
+        resolved_sheet_name = _resolve_variable_expenses_sheet(wb, sheet_name)
+
+        if resolved_sheet_name not in wb.sheetnames:
+            wb.close()
+            return 0.0
+
+        ws = wb[resolved_sheet_name]
+        rows = list(ws.values)
+        wb.close()
+
+        if len(rows) <= 1:
+            return 0.0
+
+        header = [str(c).lower() if c else "" for c in rows[0]]
+
+        amount_col = next((i for i, c in enumerate(header) if c in ("amount", "cuantity")), None)
+        date_col = next((i for i, c in enumerate(header) if c == "date"), None)
+
+        if amount_col is None or date_col is None:
+            return 0.0
+
+        total = 0.0
+        for row in rows[1:]:
+            date_val = row[date_col] if len(row) > date_col else None
+            row_month = None
+            if hasattr(date_val, "month"):
+                row_month = date_val.month
+            elif isinstance(date_val, str):
+                try:
+                    row_month = datetime.datetime.strptime(date_val[:10], "%Y-%m-%d").month
+                except ValueError:
+                    pass
+            if row_month == month and len(row) > amount_col:
+                try:
+                    total += float(row[amount_col])
+                except (ValueError, TypeError):
+                    pass
+
+        return total
+
+    except Exception as e:
+        logger.error(f"Error getting monthly total: {e}")
+        return 0.0
+
+
+def delete_last_expense(path: str, sheet_name: str = "VariableExpenses") -> dict | None:
+    """Delete the last expense row and return it as a dict, or None if nothing was deleted."""
+    try:
+        if not os.path.exists(path):
+            return None
+
+        wb = load_workbook(path)
+        resolved_sheet_name = _resolve_variable_expenses_sheet(wb, sheet_name)
+
+        if resolved_sheet_name not in wb.sheetnames:
+            wb.close()
+            return None
+
+        ws = wb[resolved_sheet_name]
+
+        if ws.max_row <= 1:
+            wb.close()
+            return None
+
+        header = [ws.cell(1, col).value for col in range(1, ws.max_column + 1)]
+        last_row_values = [ws.cell(ws.max_row, col).value for col in range(1, ws.max_column + 1)]
+        deleted = dict(zip(header, last_row_values))
+
+        ws.delete_rows(ws.max_row)
+        wb.save(path)
+        wb.close()
+
+        return deleted
+
+    except Exception as e:
+        logger.error(f"Error deleting last expense: {e}")
+        return None

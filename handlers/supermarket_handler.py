@@ -88,7 +88,7 @@ async def select_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         await update.message.reply_text(
             "What would you like to do now?",
             reply_markup=ReplyKeyboardMarkup(
-                [['/cost', '/market']],
+                [['/cost', '/market'], ['/latest', '/total'], ['/delete', '/help']],
                 one_time_keyboard=False,
                 resize_keyboard=True
             ),
@@ -174,7 +174,7 @@ async def save_product(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     await update.message.reply_text(
         "What would you like to do now?",
         reply_markup=ReplyKeyboardMarkup(
-            [['/cost', '/market']],
+            [['/cost', '/market'], ['/latest', '/total'], ['/delete', '/help']],
             one_time_keyboard=False,
             resize_keyboard=True
         ),
