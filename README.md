@@ -10,6 +10,8 @@ Main idea:
 - Receive amount and description. OPTIONAL: add date, default date is now()
 - Add the cost to an Excel sheet
 - Keep expenses ordered by date
+- Query last month expenses with `/lastmonth`
+- Analyze spending by category with `/analysis`
 - OPTIONAL: MySQL database
 - Use Docker to deploy everything and keep the code organized, so migration from an RPi keeps working
 

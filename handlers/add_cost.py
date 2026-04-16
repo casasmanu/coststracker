@@ -8,7 +8,14 @@ from telegram.ext import (
 )
 
 from states import TOTAL_COST, COST_DESCRIPTION, COST_EXTRA_DESC
-from interfaces.excel_driver import update_excel, get_last_expenses, get_monthly_total, delete_last_expense
+from interfaces.excel_driver import (
+    update_excel,
+    get_last_expenses,
+    get_monthly_total,
+    delete_last_expense,
+    get_expenses_for_month,
+    get_monthly_category_breakdown,
+)
 
 
 async def start_cost(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -91,7 +98,7 @@ async def save_expense(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
             await update.message.reply_text(
                 "Do you want to add another expense? Use /cost again or choose another menu option.",
                 reply_markup=ReplyKeyboardMarkup(
-                    [['/cost', '/market'], ['/latest', '/total'], ['/delete', '/help']],
+                    [['/cost', '/market'], ['/latest', '/total'], ['/lastmonth', '/analysis'], ['/delete', '/help']],
                     one_time_keyboard=False,
                     resize_keyboard=True
                 ),
@@ -149,6 +156,69 @@ async def show_monthly_total(update: Update, context: ContextTypes.DEFAULT_TYPE)
         f"<b>Total for {month_names[month - 1]}: \u20ac{total:.2f}</b>",
         parse_mode="HTML",
     )
+
+
+def _get_previous_month_date():
+    today = _dt.date.today()
+    first_day_current_month = today.replace(day=1)
+    return first_day_current_month - _dt.timedelta(days=1)
+
+
+async def show_last_month_expenses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Return all expenses for the previous month."""
+    last_month_date = _get_previous_month_date()
+    expenses = get_expenses_for_month(
+        path=context.bot_data["CSV_PATH"],
+        year=last_month_date.year,
+        month=last_month_date.month,
+    )
+
+    if not expenses:
+        await update.message.reply_text("No expenses found for last month.")
+        return
+
+    month_label = last_month_date.strftime("%B %Y")
+    lines = [f"<b>Expenses for {month_label}:</b>\n"]
+    for i, exp in enumerate(expenses, start=1):
+        date = exp.get("Date", "")
+        if hasattr(date, "date"):
+            date = date.date()
+        desc = exp.get("Description", "")
+        extra = exp.get("Extra", "")
+        amount = exp.get("Amount", exp.get("Cuantity", ""))
+        suffix = f" ({extra})" if extra else ""
+        lines.append(f"{i}. {date} | €{amount} | {desc}{suffix}")
+
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+
+
+async def show_spending_analysis(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show spending analysis by category for the previous month."""
+    last_month_date = _get_previous_month_date()
+    breakdown = get_monthly_category_breakdown(
+        path=context.bot_data["CSV_PATH"],
+        year=last_month_date.year,
+        month=last_month_date.month,
+    )
+
+    if not breakdown:
+        await update.message.reply_text("No data available to analyze last month.")
+        return
+
+    month_label = last_month_date.strftime("%B %Y")
+    total = sum(amount for _, amount in breakdown)
+    top_category, top_amount = breakdown[0]
+    lines = [
+        f"<b>Spending analysis for {month_label}:</b>",
+        f"Top category: <b>{top_category}</b> (€{top_amount:.2f})",
+        f"Monthly total: €{total:.2f}",
+        "",
+        "<b>Category breakdown:</b>",
+    ]
+    for category, amount in breakdown:
+        lines.append(f"- {category}: €{amount:.2f}")
+
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
 
 
 async def delete_last_expense_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

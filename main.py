@@ -6,7 +6,14 @@ from telegram.ext import Application
 
 from telegram.ext import CommandHandler
 
-from handlers.add_cost import cost_handler, show_last_expenses, show_monthly_total, delete_last_expense_handler
+from handlers.add_cost import (
+    cost_handler,
+    show_last_expenses,
+    show_monthly_total,
+    delete_last_expense_handler,
+    show_last_month_expenses,
+    show_spending_analysis,
+)
 from handlers.supermarket_handler import supermarket_handler
 from handlers.start_handler import start_handler, help_handler
 
@@ -27,6 +34,8 @@ def main():
     application.add_handler(cost_handler)
     application.add_handler(CommandHandler("latest", show_last_expenses))
     application.add_handler(CommandHandler("total", show_monthly_total))
+    application.add_handler(CommandHandler("lastmonth", show_last_month_expenses))
+    application.add_handler(CommandHandler("analysis", show_spending_analysis))
     application.add_handler(CommandHandler("delete", delete_last_expense_handler))
     application.add_handler(supermarket_handler)
     application.add_handler(start_handler)

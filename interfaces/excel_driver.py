@@ -180,6 +180,111 @@ def get_last_expenses(path: str, sheet_name: str = "VariableExpenses", n: int = 
         return []
 
 
+def _extract_year_month(date_val):
+    if hasattr(date_val, "year") and hasattr(date_val, "month"):
+        return date_val.year, date_val.month
+
+    if isinstance(date_val, str):
+        raw_date = date_val[:10]
+        for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                parsed = datetime.datetime.strptime(raw_date, fmt)
+                return parsed.year, parsed.month
+            except ValueError:
+                continue
+
+    return None, None
+
+
+def get_expenses_for_month(path: str, year: int, month: int, sheet_name: str = "VariableExpenses"):
+    """Return all expenses for a given month and year as a list of dicts."""
+    try:
+        if not os.path.exists(path):
+            return []
+
+        wb = load_workbook(path)
+        resolved_sheet_name = _resolve_variable_expenses_sheet(wb, sheet_name)
+
+        if resolved_sheet_name not in wb.sheetnames:
+            wb.close()
+            return []
+
+        ws = wb[resolved_sheet_name]
+        rows = list(ws.values)
+        wb.close()
+
+        if len(rows) <= 1:
+            return []
+
+        header = rows[0]
+        normalized_header = [str(c).lower() if c else "" for c in header]
+        date_col = next((i for i, c in enumerate(normalized_header) if c == "date"), None)
+
+        if date_col is None:
+            return []
+
+        month_rows = []
+        for row in rows[1:]:
+            date_val = row[date_col] if len(row) > date_col else None
+            row_year, row_month = _extract_year_month(date_val)
+            if row_year == year and row_month == month:
+                month_rows.append(dict(zip(header, row)))
+
+        return month_rows
+
+    except Exception as e:
+        logger.error(f"Error reading monthly expenses: {e}")
+        return []
+
+
+def get_monthly_category_breakdown(path: str, year: int, month: int, sheet_name: str = "VariableExpenses"):
+    """Return category totals for a given month and year sorted by highest amount."""
+    try:
+        expenses = get_expenses_for_month(path=path, year=year, month=month, sheet_name=sheet_name)
+        if not expenses:
+            return []
+
+        keys = [str(k).lower() if k else "" for k in expenses[0].keys()]
+        original_keys = list(expenses[0].keys())
+
+        amount_key = next(
+            (original_keys[i] for i, k in enumerate(keys) if k in ("amount", "cuantity")),
+            None,
+        )
+        category_key = next(
+            (original_keys[i] for i, k in enumerate(keys) if k in ("extra", "category", "comments")),
+            None,
+        )
+        description_key = next(
+            (original_keys[i] for i, k in enumerate(keys) if k == "description"),
+            None,
+        )
+
+        if amount_key is None:
+            return []
+
+        totals = {}
+        for expense in expenses:
+            raw_amount = expense.get(amount_key)
+            try:
+                amount = float(raw_amount)
+            except (TypeError, ValueError):
+                continue
+
+            category = expense.get(category_key) if category_key else None
+            if category in (None, "") and description_key:
+                category = expense.get(description_key)
+            category = str(category).strip() if category not in (None, "") else "Other"
+
+            totals[category] = totals.get(category, 0.0) + amount
+
+        return sorted(totals.items(), key=lambda item: item[1], reverse=True)
+
+    except Exception as e:
+        logger.error(f"Error building monthly category breakdown: {e}")
+        return []
+
+
 def get_monthly_total(path: str, month: int, sheet_name: str = "VariableExpenses") -> float:
     """Return total expenses for a given month number."""
     try:
