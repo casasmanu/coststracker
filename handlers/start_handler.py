@@ -7,11 +7,13 @@ HELP_TEXT = (
     "/market — Check or add supermarket prices\n"
     "/latest — Last 5 expenses (or /latest N for N expenses)\n"
     "/total — Total for current month (or /total N for month N)\n"
+    "/lastmonth — Show all expenses from the previous month\n"
+    "/analysis — Show spending analysis by category for last month\n"
     "/delete — Delete the last registered expense\n"
     "/help — Show this message"
 )
 
-MAIN_KEYBOARD = [['/cost', '/market'], ['/latest', '/total'], ['/delete', '/help']]
+MAIN_KEYBOARD = [['/cost', '/market'], ['/latest', '/total'], ['/lastmonth', '/analysis'], ['/delete', '/help']]
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
