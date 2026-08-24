@@ -1,11 +1,18 @@
 # virtual environment folder
 .venv
 
+# local editor settings
+.vscode/
+
 #Testing files
 GastosMensuales2022.xlsx
+GastosMensuales.xlsx
+*.xlsx
 
 ##
 .env
+.env.*
+!.env.example
 ~$GastosMensuales2022.xlsx
 
 

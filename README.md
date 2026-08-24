@@ -42,3 +42,29 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+
+
+PUBLISH TO DOCKER HUB WITH VERSION TAGS
+This repository includes a GitHub Actions workflow at .github/workflows/docker-publish.yml.
+
+1. Configure repository secrets in GitHub:
+- DOCKERHUB_USERNAME
+- DOCKERHUB_TOKEN (Docker Hub access token, not your password)
+
+2. Workflow behavior:
+- Push to main: publishes username/coststracker-bot:latest and username/coststracker-bot:sha-<shortsha>
+- Push git tag vX.Y.Z: publishes username/coststracker-bot:vX.Y.Z and username/coststracker-bot:X.Y.Z
+- Manual run (Actions tab): you can pass version input (example 1.4.0)
+
+3. Example release flow:
+- git tag v1.0.0
+- git push origin v1.0.0
+
+4. Example docker-compose usage from any server:
+version: "3.9"
+services:
+  bot:
+    image: <dockerhub-username>/coststracker-bot:v1.0.0
+    env_file:
+      - .env
+    restart: unless-stopped

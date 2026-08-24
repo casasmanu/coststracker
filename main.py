@@ -1,12 +1,18 @@
 import logging
 import os
 from dotenv import load_dotenv
-
 from telegram.ext import Application
 
-from telegram.ext import CommandHandler
+from telegram.ext import CommandHandler, MessageHandler, filters
 
-from handlers.add_cost import cost_handler, show_last_expenses, show_monthly_total, delete_last_expense_handler
+from handlers.add_cost import (
+    cost_handler,
+    show_last_expenses,
+    show_monthly_total,
+    delete_last_expense_handler,
+    quick_add_expense,
+    quick_set_category,
+)
 from handlers.supermarket_handler import supermarket_handler
 from handlers.start_handler import start_handler, help_handler
 
@@ -31,6 +37,16 @@ def main():
     application.add_handler(supermarket_handler)
     application.add_handler(start_handler)
     application.add_handler(help_handler)
+    application.add_handler(
+        MessageHandler(filters.Regex(r"^\s*[€$]?\s*\d") & ~filters.COMMAND, quick_add_expense)
+    )
+    application.add_handler(
+        MessageHandler(
+            filters.Regex(r"(?i)^(comida|ocio|salud|transporte|hogar|supermercado|tecnologia|otro)$")
+            & ~filters.COMMAND,
+            quick_set_category,
+        )
+    )
     application.run_polling()
 
 

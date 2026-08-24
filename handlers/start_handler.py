@@ -3,6 +3,7 @@ from telegram.ext import CommandHandler, ContextTypes
 
 HELP_TEXT = (
     "<b>Available commands:</b>\n\n"
+    "Quick add: send `<amount> <description>` (examples: `12.5 coffee`, `12,5 coffee`)\n\n"
     "/cost — Add a new expense\n"
     "/market — Check or add supermarket prices\n"
     "/latest — Last 5 expenses (or /latest N for N expenses)\n"

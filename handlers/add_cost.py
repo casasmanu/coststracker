@@ -1,3 +1,5 @@
+import re
+
 from telegram import ReplyKeyboardRemove, ReplyKeyboardMarkup, Update
 from telegram.ext import (
     CommandHandler,
@@ -8,7 +10,58 @@ from telegram.ext import (
 )
 
 from states import TOTAL_COST, COST_DESCRIPTION, COST_EXTRA_DESC
-from interfaces.excel_driver import update_excel, get_last_expenses, get_monthly_total, delete_last_expense
+from interfaces.excel_driver import (
+    update_excel,
+    get_last_expenses,
+    get_monthly_total,
+    delete_last_expense,
+    update_last_expense_extra,
+)
+
+
+QUICK_CATEGORY_OPTIONS = [
+    "comida",
+    "ocio",
+    "salud",
+    "transporte",
+    "hogar",
+    "supermercado",
+    "tecnologia",
+    "otro",
+]
+
+
+def _quick_category_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        [
+            ["comida", "ocio", "salud"],
+            ["transporte", "hogar", "supermercado"],
+            ["tecnologia", "otro"],
+            ["/cost", "/market", "/help"],
+        ],
+        one_time_keyboard=False,
+        resize_keyboard=True,
+    )
+
+
+def _parse_quick_expense(text: str) -> tuple[float, str] | None:
+    """Parse messages like `12.5 coffee` or `12,5 coffee`."""
+    match = re.match(r"^\s*[€$]?\s*([0-9]+(?:[\.,][0-9]+)?)\s+(.+?)\s*$", text)
+    if not match:
+        return None
+
+    amount_raw = match.group(1).replace(",", ".")
+    description = match.group(2).strip()
+
+    try:
+        amount = float(amount_raw)
+    except ValueError:
+        return None
+
+    if amount <= 0:
+        return None
+
+    return amount, description
 
 
 async def start_cost(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -109,6 +162,60 @@ async def save_expense(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     context.user_data.clear()
 
     return ConversationHandler.END
+
+
+async def quick_add_expense(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Save a quick expense from a single message (amount + description)."""
+    parsed = _parse_quick_expense(update.message.text)
+    if not parsed:
+        return
+
+    amount, description = parsed
+
+    success = update_excel(
+        path=context.bot_data["CSV_PATH"],
+        sheet_name="VariableExpenses",
+        sheet_columns=["Description", "Amount", "Extra"],
+        sheet_data=[description, amount, "sin-clasificar"],
+    )
+
+    if success:
+        context.user_data["pending_quick_category"] = True
+        await update.message.reply_text(
+            f"Expense added successfully\n\n"
+            f"Amount: €{amount:.2f}\n"
+            f"Description: {description}\n\n"
+            f"Choose a category if you want, or send the next expense directly.",
+            reply_markup=_quick_category_keyboard(),
+        )
+    else:
+        await update.message.reply_text("Error while saving the expense.")
+
+
+async def quick_set_category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Set category for the latest quick expense without blocking next entries."""
+    if not context.user_data.get("pending_quick_category"):
+        return
+
+    category = update.message.text.strip().lower()
+    if category not in QUICK_CATEGORY_OPTIONS:
+        return
+
+    success = update_last_expense_extra(
+        path=context.bot_data["CSV_PATH"],
+        extra=category,
+        sheet_name="VariableExpenses",
+    )
+
+    if success:
+        context.user_data["pending_quick_category"] = False
+        await update.message.reply_text(
+            f"Category saved: {category}.\n"
+            f"You can send another expense now (example: 8,5 pan).",
+            reply_markup=_quick_category_keyboard(),
+        )
+    else:
+        await update.message.reply_text("Could not save category for the last expense.")
 
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:

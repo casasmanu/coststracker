@@ -264,3 +264,47 @@ def delete_last_expense(path: str, sheet_name: str = "VariableExpenses") -> dict
     except Exception as e:
         logger.error(f"Error deleting last expense: {e}")
         return None
+
+
+def update_last_expense_extra(path: str, extra: str, sheet_name: str = "VariableExpenses") -> bool:
+    """Update the `Extra` field of the last expense row."""
+    try:
+        if not os.path.exists(path):
+            return False
+
+        wb = load_workbook(path)
+        resolved_sheet_name = _resolve_variable_expenses_sheet(wb, sheet_name)
+
+        if resolved_sheet_name not in wb.sheetnames:
+            wb.close()
+            return False
+
+        ws = wb[resolved_sheet_name]
+
+        if ws.max_row <= 1:
+            wb.close()
+            return False
+
+        header = [
+            str(ws.cell(1, col).value).strip().lower() if ws.cell(1, col).value else ""
+            for col in range(1, ws.max_column + 1)
+        ]
+
+        extra_col = None
+        for idx, col_name in enumerate(header, start=1):
+            if col_name in ("extra", "comment", "comments", "comentario"):
+                extra_col = idx
+                break
+
+        # Default variable-expense layout keeps `Extra` in column D.
+        if extra_col is None:
+            extra_col = 4
+
+        ws.cell(row=ws.max_row, column=extra_col).value = extra
+        wb.save(path)
+        wb.close()
+        return True
+
+    except Exception as e:
+        logger.error(f"Error updating last expense extra: {e}")
+        return False
